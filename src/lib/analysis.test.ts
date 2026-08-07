@@ -169,7 +169,9 @@ describe('analyzeSession', () => {
     const session: SortSession = {
       sessionId: 'test-session',
       themeId: boundaryTheme.id,
+      experimentCondition: 'control',
       startTime: Date.now() - 600000,
+      moveCount: 0,
       endTime: Date.now(),
       duration: 600,
       deviceInfo: {
@@ -220,8 +222,10 @@ describe('compareSessions', () => {
     const previousSession: SortSession = {
       sessionId: 'prev',
       themeId: mockTheme.id,
+      experimentCondition: 'control',
       startTime: Date.now() - 1200000,
       endTime: Date.now() - 600000,
+      moveCount: 5,
       deviceInfo: { type: 'desktop', userAgent: 'test', screenWidth: 1920, screenHeight: 1080, language: 'zh-CN' },
       finalPlacement: { '1': 3, '2': 1, '3': -1 },
       interactions: { dragCount: 10, swapCount: 0, undoCount: 0, redoCount: 0, autoFillUsed: false, autoFillCount: 0, sessionResumed: false },
@@ -232,8 +236,10 @@ describe('compareSessions', () => {
     const currentSession: SortSession = {
       sessionId: 'curr',
       themeId: mockTheme.id,
+      experimentCondition: 'experimental',
       startTime: Date.now() - 600000,
       endTime: Date.now(),
+      moveCount: 8,
       deviceInfo: { type: 'mobile', userAgent: 'test', screenWidth: 375, screenHeight: 812, language: 'zh-CN' },
       finalPlacement: { '1': 4, '2': -2, '3': 0 },
       interactions: { dragCount: 15, swapCount: 2, undoCount: 1, redoCount: 0, autoFillUsed: false, autoFillCount: 0, sessionResumed: false },
@@ -281,12 +287,12 @@ describe('边界情况测试', () => {
 
     // 完全相同的放置
     const same1: SortSession = {
-      sessionId: '1', themeId: mockTheme.id, startTime: 0, deviceInfo: { type: 'desktop', userAgent: '', screenWidth: 0, screenHeight: 0, language: '' },
+      sessionId: '1', themeId: mockTheme.id, experimentCondition: 'control', startTime: 0, moveCount: 0, deviceInfo: { type: 'desktop', userAgent: '', screenWidth: 0, screenHeight: 0, language: '' },
       finalPlacement: { '1': 3, '2': 1 }, interactions: { dragCount: 0, swapCount: 0, undoCount: 0, redoCount: 0, autoFillUsed: false, autoFillCount: 0, sessionResumed: false },
       history: [], isComplete: true,
     };
     const same2: SortSession = {
-      sessionId: '2', themeId: mockTheme.id, startTime: 0, deviceInfo: { type: 'desktop', userAgent: '', screenWidth: 0, screenHeight: 0, language: '' },
+      sessionId: '2', themeId: mockTheme.id, experimentCondition: 'control', startTime: 0, moveCount: 0, deviceInfo: { type: 'desktop', userAgent: '', screenWidth: 0, screenHeight: 0, language: '' },
       finalPlacement: { '1': 3, '2': 1 }, interactions: { dragCount: 0, swapCount: 0, undoCount: 0, redoCount: 0, autoFillUsed: false, autoFillCount: 0, sessionResumed: false },
       history: [], isComplete: true,
     };

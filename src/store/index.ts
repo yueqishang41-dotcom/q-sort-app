@@ -17,6 +17,7 @@ import {
   PreSortPile,
 } from '@/types';
 import { getDeviceInfo } from '@/lib/analysis';
+import { assignCondition } from '@/lib/experiment';
 
 interface QSortStore {
   // 状态
@@ -42,6 +43,7 @@ interface QSortStore {
 
   // 动作 - 会话
   startSession: (theme: Theme) => void;
+  setSortStartTime: (timestamp: number) => void;
   updatePreSort: (pile: PreSortPile, cardIds: string[]) => void;
   moveCardInPreSort: (cardId: string, fromPile: PreSortPile, toPile: PreSortPile) => void;
   completePreSort: () => void;
@@ -100,7 +102,10 @@ export const useQSortStore = create<QSortStore>()(
         const newSession: SortSession = {
           sessionId,
           themeId: theme.id,
+          // 进入实验时随机分配条件：50% control / 50% experimental
+          experimentCondition: assignCondition(),
           startTime: Date.now(),
+          moveCount: 0,
           deviceInfo,
           finalPlacement: {},
           interactions: {
@@ -199,6 +204,19 @@ export const useQSortStore = create<QSortStore>()(
         });
       },
 
+      // 记录开始排序的时间戳（指导语页点击"开始排序"时调用）
+      setSortStartTime: (timestamp) => {
+        const { currentSession } = get();
+        if (!currentSession) return;
+
+        set({
+          currentSession: {
+            ...currentSession,
+            sortStartTime: timestamp,
+          },
+        });
+      },
+
       // 放置卡片
       placeCard: (cardId, slot) => {
         const { currentSession, undoStack } = get();
@@ -243,6 +261,7 @@ export const useQSortStore = create<QSortStore>()(
             ...currentSession,
             finalPlacement: newPlacement,
             history,
+            moveCount: currentSession.moveCount + 1,
           },
           undoStack: newUndoStack.slice(-50), // 保留最近50步
           redoStack: [], // 清空重做栈
@@ -269,6 +288,7 @@ export const useQSortStore = create<QSortStore>()(
           currentSession: {
             ...currentSession,
             finalPlacement: newPlacement,
+            moveCount: currentSession.moveCount + 1,
             interactions: {
               ...currentSession.interactions,
               swapCount: currentSession.interactions.swapCount + 1,
@@ -400,6 +420,7 @@ export const useQSortStore = create<QSortStore>()(
           currentSession: {
             ...currentSession,
             finalPlacement: previousPlacement,
+            moveCount: currentSession.moveCount + 1,
             interactions: {
               ...currentSession.interactions,
               undoCount: currentSession.interactions.undoCount + 1,
@@ -423,6 +444,7 @@ export const useQSortStore = create<QSortStore>()(
           currentSession: {
             ...currentSession,
             finalPlacement: nextPlacement,
+            moveCount: currentSession.moveCount + 1,
             interactions: {
               ...currentSession.interactions,
               redoCount: currentSession.interactions.redoCount + 1,
@@ -438,13 +460,18 @@ export const useQSortStore = create<QSortStore>()(
         const { currentSession, allSessions } = get();
         if (!currentSession) return;
 
+        const now = Date.now();
+        // 总用时 = 结束排序时刻 - 开始排序时刻（从指导语页"开始排序"算起）
+        const sortStart = currentSession.sortStartTime ?? currentSession.startTime;
+
         const completedSession: SortSession = {
           ...currentSession,
-          endTime: Date.now(),
-          duration: Math.floor((Date.now() - currentSession.startTime) / 1000),
+          endTime: now,
+          sortEndTime: now,
+          duration: Math.max(0, Math.round((now - sortStart) / 1000)),
           anonymousLabel: label,
           isComplete: true,
-          completedAt: Date.now(),
+          completedAt: now,
         };
 
         set({

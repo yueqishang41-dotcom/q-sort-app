@@ -4,6 +4,7 @@ import { useState, useRef, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQSortStore } from '@/store';
 import { analyzeSession, getTagName, formatDuration } from '@/lib/analysis';
+import { buildExperimentJSON } from '@/lib/experiment';
 import { toPng } from 'html-to-image';
 import {
   ArrowLeft,
@@ -265,6 +266,12 @@ export default function ResultPage() {
     [currentSession, currentTheme]
   );
 
+  // 实验数据 JSON（条件、时间戳、总用时、最终位置、移动次数等）
+  const experimentJSON = useMemo(
+    () => buildExperimentJSON(currentSession, currentTheme.cards),
+    [currentSession, currentTheme]
+  );
+
   // 提取高/低分标签
   const topTags = useMemo(
     () => analysis.tagProfile.filter(t => t.averageScore >= 1).slice(0, 5),
@@ -355,6 +362,17 @@ export default function ResultPage() {
   const handleCopyText = async () => {
     try {
       await navigator.clipboard.writeText(xiaohongshuText);
+      setCopiedText(true);
+      setTimeout(() => setCopiedText(false), 2000);
+    } catch (error) {
+      console.error('复制失败:', error);
+    }
+  };
+
+  // 复制实验数据 JSON
+  const handleExportExperimentJSON = async () => {
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(experimentJSON, null, 2));
       setCopiedText(true);
       setTimeout(() => setCopiedText(false), 2000);
     } catch (error) {
@@ -823,6 +841,45 @@ export default function ResultPage() {
                     <p className="text-slate-400 dark:text-slate-500">重做</p>
                   </div>
                 </div>
+              </div>
+
+              {/* 实验数据（1×2 被试间设计） */}
+              <div className="mt-4 p-4 bg-primary-50 dark:bg-primary-900/20 rounded-xl border border-primary-100 dark:border-primary-800">
+                <p className="text-xs font-medium text-primary-700 dark:text-primary-300 mb-2">
+                  🧪 实验数据
+                </p>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs text-slate-600 dark:text-slate-400">
+                  <div>
+                    <p className="text-slate-400 dark:text-slate-500">条件组</p>
+                    <p>{experimentJSON.condition === 'experimental' ? '实验组 experimental' : '对照组 control'}</p>
+                  </div>
+                  <div>
+                    <p className="text-slate-400 dark:text-slate-500">开始排序时间</p>
+                    <p>{new Date(experimentJSON.sortStartTime ?? Date.now()).toLocaleString('zh-CN')}</p>
+                  </div>
+                  <div>
+                    <p className="text-slate-400 dark:text-slate-500">结束时间</p>
+                    <p>{new Date(experimentJSON.sortEndTime ?? Date.now()).toLocaleString('zh-CN')}</p>
+                  </div>
+                  <div>
+                    <p className="text-slate-400 dark:text-slate-500">总用时</p>
+                    <p>{experimentJSON.durationSeconds ?? '—'} 秒</p>
+                  </div>
+                  <div>
+                    <p className="text-slate-400 dark:text-slate-500">移动/调整次数</p>
+                    <p>{experimentJSON.moveCount} 次</p>
+                  </div>
+                  <div>
+                    <p className="text-slate-400 dark:text-slate-500">积极描述词平均位置</p>
+                    <p>{experimentJSON.positiveWordAvgPosition?.toFixed(2) ?? '—'}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={handleExportExperimentJSON}
+                  className="w-full py-2 rounded-lg bg-primary-500 text-white text-xs font-medium hover:bg-primary-600 transition-colors"
+                >
+                  {copiedText ? '已复制 JSON' : '复制实验 JSON'}
+                </button>
               </div>
 
               <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg">

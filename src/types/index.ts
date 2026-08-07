@@ -25,6 +25,9 @@ export type CardTag =
 /** 卡片极性倾向（可选，用于辅助分析） */
 export type CardPolarity = 'positive' | 'negative' | 'neutral';
 
+/** 实验条件类型（1×2 被试间设计） */
+export type ExperimentCondition = 'control' | 'experimental';
+
 /** 卡片敏感度级别 */
 export type SensitivityLevel = 'low' | 'medium' | 'high';
 
@@ -133,9 +136,13 @@ export interface FinalPlacement {
 export interface SortSession {
   sessionId: string;
   themeId: string;
+  experimentCondition: ExperimentCondition; // 实验条件（进入实验时随机分配，50/50）
   startTime: number;
   endTime?: number;
-  duration?: number;          // 总用时（秒）
+  duration?: number;          // 总用时（秒）= (sortEndTime - sortStartTime) / 1000
+  sortStartTime?: number;     // 开始排序的时间戳（指导语页点击"开始排序"时记录）
+  sortEndTime?: number;       // 结束排序的时间戳（完成会话时记录）
+  moveCount: number;          // 排序过程中卡片被移动的总次数
   deviceInfo: DeviceInfo;
 
   // 阶段数据

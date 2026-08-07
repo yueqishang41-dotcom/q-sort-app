@@ -17,7 +17,8 @@ export default function IntroPage() {
     setIsStarting(true);
     setTheme(theme);
     startSession(theme);
-    router.push('/presort');
+    // 先进入引导语页（按随机分配的条件显示不同引导语），再开始预分堆
+    router.push('/instruction');
   };
 
   return (

@@ -239,7 +239,8 @@ export default function SortingPage() {
   const handleComplete = () => {
     if (!distributionValid) return;
     completeSession(label || undefined);
-    router.push('/result');
+    // 先进入提交页提交数据到后端，成功后再查看结果
+    router.push('/submit');
   };
 
   // 拖拽开始
