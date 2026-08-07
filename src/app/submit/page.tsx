@@ -17,11 +17,15 @@ import {
 
 type SubmitStatus = 'idle' | 'submitting' | 'success' | 'error';
 
-/** 性别选项（值即发送给后端的内容，与后端 get_gender_display 展示兼容） */
+/**
+ * 性别选项。
+ * value 必须与后端 QSortResult.GENDER_CHOICES 一致（male/female/other/prefer_not_to_say），
+ * 这样 dashboard 的 get_gender_display() 才能正确显示中文。
+ */
 const GENDER_OPTIONS = [
-  { value: '男', label: '男' },
-  { value: '女', label: '女' },
-  { value: '其他', label: '其他' },
+  { value: 'male', label: '男' },
+  { value: 'female', label: '女' },
+  { value: 'other', label: '其他' },
   { value: 'prefer_not_to_say', label: '不愿透露' },
 ];
 

@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Q-Sort 实验平台 · 高保真原型</title>
+<style>
+  :root {
+    --primary: #6366f1;
+    --primary-dark: #4f46e5;
+    --slate-50: #f8fafc;
+    --slate-100: #f1f5f9;
+    --slate-200: #e2e8f0;
+    --slate-300: #cbd5e1;
+    --slate-500: #64748b;
+    --slate-600: #475569;
+    --slate-800: #1e293b;
+    --slate-900: #0f172a;
+    --green: #22c55e;
+    --green-dark: #16a34a;
+    --red: #ef4444;
+    --amber: #f59e0b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(135deg, #eef2ff 0%, #f8fafc 100%);
+    min-height: 100vh;
+    padding-bottom: 60px;
+    color: var(--slate-900);
+  }
+
+  /* 顶部说明 */
+  .hero {
+    background: linear-gradient(135deg, var(--primary) 0%, #8b5cf6 100%);
+    color: #fff;
+    padding: 32px 20px 28px;
+    text-align: center;
+  }
+  .hero h1 { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+  .hero p { font-size: 13px; opacity: .85; line-height: 1.6; }
+  .hero .badge {
+    display: inline-block; background: rgba(255,255,255,.2);
+    padding: 3px 12px; border-radius: 999px; font-size: 12px; margin-top: 8px;
+  }
+
+  /* 屏幕切换 Tab */
+  .tabbar {
+    position: sticky; top: 0; z-index: 50;
+    background: #fff; box-shadow: 0 2px 12px rgba(0,0,0,.06);
+    display: flex; overflow-x: auto; gap: 2px; padding: 8px;
+  }
+  .tabbar button {
+    flex-shrink: 0; border: none; background: transparent;
+    padding: 8px 14px; border-radius: 10px; font-size: 13px; font-weight: 500;
+    color: var(--slate-500); cursor: pointer; transition: all .15s;
+  }
+  .tabbar button.active { background: var(--primary); color: #fff; }
+
+  .wrap { max-width: 900px; margin: 0 auto; padding: 20px 16px; }
+
+  /* 布局：左手机 mockup，右标注 */
+  .screen { display: none; gap: 28px; align-items: flex-start; }
+  .screen.active { display: flex; }
+  .phone-col { flex-shrink: 0; }
+  .annot-col { flex: 1; min-width: 0; }
+
+  @media (max-width: 760px) {
+    .screen.active { flex-direction: column; }
+    .phone-col { margin: 0 auto; }
+  }
+
+  /* 手机外框 */
+  .phone {
+    width: 320px; border-radius: 36px; background: #111;
+    padding: 10px; box-shadow: 0 24px 60px rgba(15,23,42,.25);
+  }
+  .phone-screen {
+    border-radius: 27px; overflow: hidden; background: #fff;
+    height: 640px; display: flex; flex-direction: column;
+  }
+  .statusbar {
+    height: 34px; background: inherit; display: flex; align-items: center;
+    justify-content: center; font-size: 11px; font-weight: 600; color: var(--slate-600);
+    flex-shrink: 0;
+  }
+
+  /* 通用 mock 元素 */
+  .mock-nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 14px; border-bottom: 1px solid var(--slate-100);
+    background: rgba(255,255,255,.9);
+  }
+  .mock-nav .logo { font-weight: 700; font-size: 14px; color: var(--slate-900); }
+  .mock-nav .link { font-size: 12px; color: var(--primary); }
+  .mock-nav .btn-icon { width: 28px; height: 28px; border-radius: 8px; background: var(--slate-100); }
+  .mock-body { flex: 1; overflow: auto; padding: 16px; }
+  .mock-body.center { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .mock-footer {
+    flex-shrink: 0; border-top: 1px solid var(--slate-100);
+    padding: 10px 16px; background: rgba(255,255,255,.95); display: flex;
+    align-items: center; justify-content: space-between; font-size: 12px; color: var(--slate-500);
+  }
+
+  .pill { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+  .pill.green { background: #dcfce7; color: var(--green-dark); }
+  .pill.red { background: #fee2e2; color: var(--red); }
+  .pill.slate { background: var(--slate-100); color: var(--slate-600); }
+  .pill.amber { background: #fef3c7; color: var(--amber); }
+  .pill.indigo { background: #e0e7ff; color: var(--primary-dark); }
+
+  .btn {
+    display: block; width: 100%; padding: 13px; border-radius: 14px;
+    border: none; font-size: 15px; font-weight: 600; cursor: pointer;
+    background: var(--primary); color: #fff; text-align: center;
+  }
+  .btn.green { background: var(--green); }
+  .btn.gray { background: var(--slate-200); color: var(--slate-600); }
+  .btn.ghost { background: transparent; color: var(--slate-500); box-shadow: none; font-size: 13px; }
+
+  .card {
+    background: #fff; border-radius: 16px; padding: 14px;
+    box-shadow: 0 4px 20px rgba(15,23,42,.06); margin-bottom: 12px;
+  }
+  .card h3 { font-size: 14px; margin-bottom: 6px; }
+  .card p { font-size: 12px; color: var(--slate-600); line-height: 1.6; }
+
+  .divider { height: 1px; background: var(--slate-100); margin: 12px 0; }
+
+  .h2 { font-size: 15px; font-weight: 700; margin: 4px 0 10px; }
+  .h3 { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+  .text-sm { font-size: 12px; }
+  .text-xs { font-size: 11px; }
+  .muted { color: var(--slate-500); }
+
+  /* 排序卡片 mock */
+  .qcard {
+    background: #fff; border-radius: 20px; padding: 18px; text-align: center;
+    box-shadow: 0 10px 30px rgba(15,23,42,.12); width: 100%;
+  }
+  .qcard p { font-size: 15px; line-height: 1.6; color: var(--slate-800); font-weight: 500; }
+  .tag-row { display: flex; gap: 6px; justify-content: center; margin-top: 12px; flex-wrap: wrap; }
+  .tag { background: var(--slate-100); padding: 3px 10px; border-radius: 999px; font-size: 11px; color: var(--slate-600); }
+
+  /* 三堆按钮 */
+  .three-pile { display: flex; gap: 14px; justify-content: center; margin-top: 16px; }
+  .pile { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+  .pile .circle { width: 54px; height: 54px; border-radius: 16px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 20px; }
+  .pile .label { font-size: 11px; font-weight: 600; }
+  .pile .count { font-size: 10px; color: var(--slate-500); }
+  .circle.green { background: linear-gradient(135deg, #4ade80, var(--green-dark)); }
+  .circle.slate { background: linear-gradient(135deg, #cbd5e1, #64748b); }
+  .circle.red { background: linear-gradient(135deg, #f87171, var(--red)); }
+
+  /* 档位条 */
+  .slot-row { display: flex; justify-content: center; gap: 3px; margin-top: 10px; }
+  .slot {
+    width: 30px; height: 30px; border-radius: 50%; font-size: 10px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; color: #fff;
+  }
+  .slot span { transform: scale(.9); }
+
+  /* 标注区 */
+  .annot-card {
+    background: #fff; border-radius: 14px; padding: 16px 18px;
+    box-shadow: 0 4px 20px rgba(15,23,42,.06); margin-bottom: 12px;
+    border-left: 4px solid var(--primary);
+  }
+  .annot-card h4 { font-size: 14px; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+  .annot-card p { font-size: 13px; color: var(--slate-600); line-height: 1.7; }
+  .annot-card code {
+    background: var(--slate-100); padding: 2px 6px; border-radius: 6px;
+    font-size: 12px; font-family: "SF Mono", Consolas, monospace;
+  }
+  .annot-card .tag-line {
+    display: inline-block; background: #eef2ff; color: var(--primary-dark);
+    font-size: 11px; font-weight: 600; padding: 2px 10px; border-radius: 999px; margin-bottom: 8px;
+  }
+
+  .check { color: var(--green-dark); font-weight: 700; }
+  .x { color: var(--red); font-weight: 700; }
+
+  .table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .table th, .table td { text-align: left; padding: 7px 9px; border-bottom: 1px solid var(--slate-100); }
+  .table th { color: var(--slate-500); font-weight: 600; }
+
+  .arrow { text-align: center; font-size: 20px; color: var(--primary); margin: 2px 0; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>Q-Sort 实验平台 · 高保真原型</h1>
+  <p>「引导语框架效应对自我认知评价的影响」· 1×2 被试间设计</p>
+  <span class="badge">被试端 7 屏 · 主试端 1 屏 · 数据流 1 屏</span>
+</div>
+
+<div class="tabbar" id="tabbar"></div>
+
+<div class="wrap">
+
+<!-- ============ 屏 1：首页 ============ -->
+<div class="screen" data-title="01 首页 · 知情同意">
+  <div class="phone-col"><div class="phone"><div class="phone-screen">
+    <div class="statusbar">9:41</div>
+    <div class="mock-nav">
+      <span class="logo">Q-sort 测评</span>
+      <span class="link">方法说明</span>
+    </div>
+    <div class="mock-body center" style="justify-content:flex-start; padding-top:28px;">
+      <div style="text-align:center; margin-bottom:16px;">
+        <div style="font-size:20px; font-weight:700; margin-bottom:6px;">关系中的自我探索</div>
+        <div class="text-sm muted">通过 36 张卡片排序，表达"我是什么样的人"</div>
+      </div>
+      <div class="card" style="width:100%;">
+        <div class="h3">这是什么测评？</div>
+        <p>Q-sort 是心理学研究中常用的方法，帮助你通过卡片排序来表达自我认知。你会看到 36 张描述句卡片，按"有多像我"分配到 9 个档位。</p>
+        <div class="divider"></div>
+        <p><span class="pill indigo">预计用时 5 分钟</span></p>
+      </div>
+      <div class="card" style="width:100%; border-left:4px solid var(--amber);">
+        <div class="h3" style="color:var(--amber);">重要说明</div>
+        <p>本测评仅供自我反思与科普参考，不构成临床诊断或医疗建议。</p>
+      </div>
+      <label style="display:flex; align-items:center; gap:8px; margin:10px 0; font-size:12px; color:var(--slate-600); cursor:pointer;">
+        <input type="checkbox" checked style="width:16px;height:16px;accent-color:var(--primary);"> 我已阅读并理解上述说明
+      </label>
+      <div class="btn">开始测评 →</div>
+    </div>
+  </div></div></div>
+  <div class="annot-col">
+    <div class="annot-card">
+      <span class="tag-line">知情同意 · 作业交付物 1</span>
+      <h4>首页 = 知情同意入口</h4>
+      <p>被试阅读测评说明与免责声明后，<strong>必须勾选同意</strong>才能开始。这一步对应评分标准中的伦理要求。</p>
+    </div>
+    <div class="annot-card">
+      <span class="tag-line">随机分配 · 自变量</span>
+      <h4>点击"开始测评"时分配实验条件</h4>
+      <p>调用 <code>assignCondition()</code>：<code>Math.random() &lt; 0.5</code> → <code>control</code>，否则 → <code>experimental</code>。条件写入本次会话，全程固定、被试不可见。</p>
+      <div class="table" style="margin-top:8px;">
+        <table class="table">
+          <tr><th>概率</th><th>条件</th><th>引导语</th></tr>
+          <tr><td>50%</td><td><span class="pill slate">control</span></td><td>中性</td></tr>
+          <tr><td>50%</td><td><span class="pill indigo">experimental</span></td><td>社会赞许暗示</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 屏 2：引导语-对照 ============ -->
+<div class="screen" data-title="02 引导语 · 对照组">
+  <div class="phone-col"><div class="phone"><div class="phone-screen">
+    <div class="statusbar">9:41</div>
+    <div class="mock-body center">
+      <div style="width:52px;height:52px;border-radius:50%;background:#e0e7ff;display:flex;align-items:center;justify-content:center;margin-bottom:14px;">
+        <div style="width:0;height:0;border-left:16px solid var(--primary);border-top:10px solid transparent;border-bottom:10px solid transparent;margin-left:4px;"></div>
+      </div>
+      <div class="h2">实验说明</div>
+      <div class="card" style="width:100%; background:var(--slate-50);">
+        <p>请根据你的真实感受，将这些描述按照从"最不符合"到"最符合"的顺序排列。</p>
+      </div>
+      <div class="card" style="width:100%; background:var(--slate-50);">
+        <p>每个档位的卡片数量是固定的，需要在取舍中做出选择。没有对错之分，请凭第一直觉完成。</p>
+      </div>
+      <div class="text-xs muted" style="margin:10px 0 14px;">点击「开始排序」后计时开始</div>
+      <div class="btn">开始排序</div>
+    </div>
+  </div></div></div>
+  <div class="annot-col">
+    <div class="annot-card">
+      <span class="tag-line">对照组 · 中性引导语</span>
+      <h4>「请根据你的真实感受…」</h4>
+      <p>对照组看到<strong>中性引导语</strong>，不含任何社会期望暗示。</p>
+    </div>
+    <div class="annot-card">
+      <span class="tag-line">因变量 DV2 · 计时起点</span>
+      <h4>点击"开始排序" → 记录 <code>sortStartTime</code></h4>
+      <p>从此刻起计算<strong>排序完成时间</strong>（DV2）。两组的计时逻辑完全相同。</p>
+    </div>
+    <div class="annot-card">
+      <span class="tag-line">变量控制</span>
+      <h4>两屏布局完全一致，仅文字不同</h4>
+      <p>对照屏（本屏）与实验屏（下一屏）<strong>样式、结构、按钮完全一致</strong>，唯一差异是引导语文字——这是控制无关变量的关键设计。</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 屏 3：引导语-实验 ============ -->
+<div class="screen" data-title="03 引导语 · 实验组">
+  <div class="phone-col"><div class="phone"><div class="phone-screen">
+    <div class="statusbar">9:41</div>
+    <div class="mock-body center">
+      <div style="width:52px;height:52px;border-radius:50%;background:#e0e7ff;display:flex;align-items:center;justify-content:center;margin-bottom:14px;">
+        <div style="width:0;height:0;border-left:16px solid var(--primary);border-top:10px solid transparent;border-bottom:10px solid transparent;margin-left:4px;"></div>
+      </div>
+      <div class="h2">实验说明</div>
+      <div class="card" style="width:100%; background:var(--slate-50); border-left:4px solid var(--primary);">
+        <p><strong>研究表明，心理健康水平高的人倾向于认同积极的自我描述。</strong>请根据你的真实感受，将这些描述排列。</p>
+      </div>
+      <div class="card" style="width:100%; background:var(--slate-50);">
+        <p>每个档位的卡片数量是固定的，需要在取舍中做出选择。没有对错之分，请凭第一直觉完成。</p>
+      </div>
+      <div class="text-xs muted" style="margin:10px 0 14px;">点击「开始排序」后计时开始</div>
+      <div class="btn">开始排序</div>
+    </div>
+  </div></div></div>
+  <div class="annot-col">
+    <div class="annot-card">
+      <span class="tag-line">实验组 · 社会赞许性暗示</span>
+      <h4>「研究表明，心理健康水平高的人倾向于认同积极的自我描述…」</h4>
+      <p>在引导语前插入<strong>社会赞许性暗示句</strong>，激活被试的印象管理动机（Paulhus, 1984）。</p>
+    </div>
+    <div class="annot-card">
+      <span class="tag-line">自变量操作定义</span>
+      <h4>两组差异 = 一句话</h4>
+      <p>除该暗示句外，其余引导语与对照组<strong>逐字一致</strong>，保证自变量操作纯净。</p>
+    </div>
+    <div class="annot-card">
+      <span class="tag-line">预期效应</span>
+      <h4>对应假设 H1–H3</h4>
+      <p><span class="check">H1</span> 积极词平均位置更高　<span class="check">H2</span> 用时更长　<span class="check">H3</span> 调整次数更多</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 屏 4：预分堆 ============ -->
+<div class="screen" data-title="04 预分堆阶段">
+  <div class="phone-col"><div class="phone"><div class="phone-screen">
+    <div class="statusbar">9:41</div>
+    <div class="mock-nav">
+      <span class="link">← 返回</span>
+      <span class="btn-icon"></span>
+    </div>
+    <div class="mock-body">
+      <div style="display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:14px;">
+        <div style="width:44px;height:44px;border-radius:50%;background:var(--slate-100);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;">6</div>
+        <div class="text-xs muted">已分类 6 / 36</div>
+      </div>
+      <div class="qcard">
+        <p>我常常因为害怕冲突而回避表达自己的想法</p>
+        <div class="tag-row"><span class="tag">冲突回避</span><span class="tag">需求表达</span></div>
+      </div>
+      <div class="three-pile">
+        <div class="pile"><div class="circle green">✓</div><div class="label">更像我</div><div class="count">2 张</div></div>
+        <div class="pile"><div class="circle slate">－</div><div class="label">不确定</div><div class="count">1 张</div></div>
+        <div class="pile"><div class="circle red">✗</div><div class="label">更不像我</div><div class="count">3 张</div></div>
+      </div>
+    </div>
+    <div class="mock-footer"><span>上一张</span><span style="font-weight:600;">3 / 36</span><span>下一张</span></div>
+  </div></div></div>
+  <div class="annot-col">
+    <div class="annot-card">
+      <span class="tag-line">阶段 1 · 粗糙分类</span>
+      <h4>预分堆：三堆快速分类</h4>
+      <p>36 张卡片逐一判断「更像我 / 不确定 / 更不像我」，建立排序的<strong>粗粒度基线</strong>，降低后续精细排序的认知负荷。</p>
+    </div>
+    <div class="annot-card">
+      <span class="tag-line">完整实验流程</span>
+      <h4>为什么要有这一步？</h4>
+      <p>经典 Q-sort 采用"预分堆 → 精细排列"两阶段法，既保证强制分布的可行性，也让被试的取舍过程更自然。</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 屏 5：精细排序 ============ -->
+<div class="screen" data-title="05 精细排序阶段">
+  <div class="phone-col"><div class="phone"><div class="phone-screen">
+    <div class="statusbar">9:41</div>
+    <div class="mock-nav">
+      <span class="link">← 返回</span>
+      <span style="display:flex;align-items:center;gap:8px;">
+        <span style="width:34px;height:34px;border-radius:50%;background:var(--slate-100);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;">18</span>
+        <span class="text-xs muted">分布正确 ✓</span>
+      </span>
+    </div>
+    <div class="mock-body">
+      <div class="qcard" style="padding:14px;">
+        <p style="font-size:14px;">我能够坦诚地表达自己的感受和需求</p>
+        <div style="margin-top:10px;background:var(--slate-50);border-radius:10px;padding:4px;text-align:center;">
+          <span class="pill indigo">+3</span>
+        </div>
+      </div>
+      <div class="slot-row">
+        <div class="slot" style="background:linear-gradient(135deg,#2dd4bf,#0d9488);">+4</div>
+        <div class="slot" style="background:linear-gradient(135deg,#34d399,#059669);">+3</div>
+        <div class="slot" style="background:linear-gradient(135deg,#4ade80,#16a34a);">+2</div>
+        <div class="slot" style="background:linear-gradient(135deg,#a3e635,#65a30d);">+1</div>
+        <div class="slot" style="background:linear-gradient(135deg,#94a3b8,#64748b);">0</div>
+        <div class="slot" style="background:linear-gradient(135deg,#facc15,#ca8a04);">-1</div>
+        <div class="slot" style="background:linear-gradient(135deg,#fbbf24,#b45309);">-2</div>
+        <div class="slot" style="background:linear-gradient(135deg,#fb923c,#ea580c);">-3</div>
+        <div class="slot" style="background:linear-gradient(135deg,#f87171,#dc2626);">-4</div>
+      </div>
+      <div class="text-xs muted" style="text-align:center;margin-top:6px;">拖拽卡片到档位 · 每档容量固定</div>
+    </div>
+    <div class="mock-footer">
+      <span>自动填充 (2)</span>
+      <span style="background:var(--primary);color:#fff;padding:8px 14px;border-radius:12px;font-weight:600;">查看结果</span>
+    </div>
+  </div></div></div>
+  <div class="annot-col">
+    <div class="annot-card">
+      <span class="tag-line">阶段 2 · 强制分布</span>
+      <h4>精细排序：9 档强制分布</h4>
+      <p>将卡片拖拽/放置到 <strong>-4 ~ +4</strong> 共 9 个档位，容量固定为 <code>[2,3,4,5,8,5,4,3,2]</code>，共 36 张。强制取舍是 Q 方法论的核心。</p>
+    </div>
+    <div class="annot-card">
+      <span class="tag-line">因变量 DV1 · DV3</span>
+      <h4>记录最终位置与移动次数</h4>
+      <p>每张卡片的<strong>最终档位</strong>（DV1 数据源）与每次放置/交换/撤销/重做的<strong>移动次数</strong>（DV3）在此全程记录，存入 <code>moveCount</code>。</p>
+    </div>
+    <div class="annot-card">
+      <span class="tag-line">H2 关注点</span>
+      <h4>时间在排序阶段流逝</h4>
+      <p>DV2（总用时）= 提交时刻 − 开始排序时刻，完整覆盖本阶段的思考与反复调整。</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 屏 6：提交页 ============ -->
+<div class="screen" data-title="06 提交结果页">
+  <div class="phone-col"><div class="phone"><div class="phone-screen">
+    <div class="statusbar">9:41</div>
+    <div class="mock-nav"><span class="link">← 返回排序</span></div>
+    <div class="mock-body">
+      <div style="text-align:center; margin-bottom:14px;">
+        <div style="width:46px;height:46px;border-radius:50%;background:#e0e7ff;display:flex;align-items:center;justify-content:center;margin:0 auto 8px;">
+          <span style="font-size:20px;">✉</span>
+        </div>
+        <div class="h2">提交测评结果</div>
+        <div class="text-xs muted">排序已完成，请填写基本信息后提交</div>
+      </div>
+      <div class="card" style="padding:12px;">
+        <div class="text-xs muted" style="margin-bottom:6px;">姓名 <span style="color:var(--red);">*</span></div>
+        <div style="background:var(--slate-50);border-radius:10px;padding:9px 12px;font-size:13px;color:var(--slate-600);">请输入姓名</div>
+      </div>
+      <div class="card" style="padding:12px;">
+        <div class="text-xs muted" style="margin-bottom:6px;">年龄（选填）</div>
+        <div style="background:var(--slate-50);border-radius:10px;padding:9px 12px;font-size:13px;color:var(--slate-600);">请输入年龄</div>
+      </div>
+      <div class="card" style="padding:12px;">
+        <div class="text-xs muted" style="margin-bottom:6px;">性别</div>
+        <div style="background:var(--slate-50);border-radius:10px;padding:9px 12px;font-size:13px;color:var(--slate-600);">男 ⌄</div>
+      </div>
+      <div class="card" style="padding:12px; background:var(--slate-50);">
+        <div class="text-xs muted" style="font-weight:600; margin-bottom:6px;">本次数据摘要</div>
+        <div class="table"><table class="table">
+          <tr><td>条件组</td><td><span class="pill indigo">experimental</span></td></tr>
+          <tr><td>用时</td><td>185 秒</td></tr>
+          <tr><td>移动次数</td><td>47 次</td></tr>
+        </table></div>
+      </div>
+      <div class="btn" style="margin-top:4px;">提交结果</div>
+    </div>
+  </div></div></div>
+  <div class="annot-col">
+    <div class="annot-card">
+      <span class="tag-line">数据汇总</span>
+      <h4>提交页 = 数据收集的出口</h4>
+      <p>被试基本信息（姓名/年龄/性别）+ 会话内已记录的实验数据（条件/用时/移动次数/最终位置）在点击提交时一并打包。</p>
+    </div>
+    <div class="annot-card">
+      <span class="tag-line">防重复提交 · loading</span>
+      <h4>健壮性设计</h4>
+      <p>提交中按钮<strong>置灰禁用</strong>并显示 loading 动画，防止重复提交产生脏数据；成功弹窗后跳结果页，失败弹窗提供<strong>重试</strong>。</p>
+    </div>
+    <div class="annot-card">
+      <span class="tag-line">POST payload</span>
+      <h4>发送到后端的 JSON</h4>
+      <pre style="background:var(--slate-900);color:#e2e8f0;border-radius:10px;padding:12px;font-size:11px;line-height:1.7;overflow:auto;margin-top:8px;">{
+  "subject_name": "张三",
+  "age": 22,
+  "gender": "male",
+  "condition": "experimental",
+  "sort_data": {"card-001":4, "card-002":-3, "..." : 0},
+  "duration_seconds": 185,
+  "move_count": 47,
+  "user_agent": "Mozilla/5.0 ..."
+}</pre>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 屏 7：提交结果弹窗（成功/失败） ============ -->
+<div class="screen" data-title="07 提交结果弹窗">
+  <div class="phone-col"><div class="phone"><div class="phone-screen" style="position:relative;">
+    <div class="statusbar">9:41</div>
+    <div class="mock-nav"><span class="link">← 返回排序</span></div>
+    <div class="mock-body" style="filter:blur(1px);">
+      <div style="text-align:center; margin-bottom:14px;">
+        <div style="width:46px;height:46px;border-radius:50%;background:#e0e7ff;display:flex;align-items:center;justify-content:center;margin:0 auto 8px;"><span style="font-size:20px;">✉</span></div>
+        <div class="h2">提交测评结果</div>
+      </div>
+      <div class="card"><div class="text-xs muted">姓名 <span style="color:var(--red);">*</span></div><div style="background:var(--slate-50);border-radius:10px;padding:9px 12px;font-size:13px;color:var(--slate-600);">张三</div></div>
+      <div class="card"><div class="text-xs muted">性别</div><div style="background:var(--slate-50);border-radius:10px;padding:9px 12px;font-size:13px;color:var(--slate-600);">男 ⌄</div></div>
+    </div>
+    <!-- 成功弹窗 -->
+    <div style="position:absolute;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;">
+      <div style="background:#fff;border-radius:18px;padding:22px;width:230px;text-align:center;">
+        <div style="width:52px;height:52px;border-radius:50%;background:#dcfce7;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;color:var(--green-dark);font-size:26px;font-weight:700;">✓</div>
+        <div style="font-size:16px;font-weight:700;margin-bottom:4px;">提交成功</div>
+        <div class="text-xs muted" style="margin-bottom:14px;">你的数据已保存，感谢参与！</div>
+        <div class="btn green" style="padding:10px;font-size:13px;">查看结果</div>
+      </div>
+    </div>
+  </div></div></div>
+  <div class="annot-col">
+    <div class="annot-card">
+      <span class="tag-line">成功分支</span>
+      <h4><span class="check">✓</span> 提交成功 → 弹窗 → 结果页</h4>
+      <p>后端返回 <code>success:true</code> 与生成的主试编号（如 <code>S001</code>），前端弹出绿色成功弹窗，点击进入结果页。</p>
+    </div>
+    <div class="annot-card">
+      <span class="tag-line">失败分支</span>
+      <h4><span class="x">✗</span> 提交失败 → 弹窗 + 重试</h4>
+      <p>网络异常/后端未启动时，弹出红色失败弹窗「提交失败，请检查网络连接后重试」，提供<strong>重试</strong>按钮，不丢失任何本地数据。</p>
+    </div>
+    <div class="annot-card">
+      <span class="tag-line">健壮性</span>
+      <h4>重试不产生重复数据</h4>
+      <p>失败后本地 session 保持完整，重试时重新 POST 同一条记录；成功弹窗出现前按钮始终禁用，杜绝双写。</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 屏 8：结果页 ============ -->
+<div class="screen" data-title="08 结果页（被试报告）">
+  <div class="phone-col"><div class="phone"><div class="phone-screen">
+    <div class="statusbar">9:41</div>
+    <div class="mock-nav">
+      <span class="link">← 返回首页</span>
+      <span class="link">历史记录</span>
+    </div>
+    <div class="mock-body">
+      <div class="card" style="background:linear-gradient(135deg,var(--primary),#8b5cf6);color:#fff;">
+        <div class="text-xs" style="opacity:.85;margin-bottom:6px;">核心发现</div>
+        <div style="font-size:16px;font-weight:700;margin-bottom:6px;">你重视关系中的坦诚，但在表达需求时有所保留</div>
+        <div class="text-xs" style="opacity:.9;line-height:1.6;">你在"需求表达"与"冲突回避"之间存在内在张力——渴望表达真实感受，又担心破坏关系。</div>
+      </div>
+      <div class="card">
+        <div class="h3">我的特质画像</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
+          <span class="pill green">信任能力 +2.4</span>
+          <span class="pill green">自我价值 +1.8</span>
+          <span class="pill red">冲突回避 −2.1</span>
+          <span class="pill slate">控制感 −0.3</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="h3">最像我（+4/+3）</div>
+        <p>· 我能够坦诚地表达自己的感受和需求 <span class="pill indigo">+4</span></p>
+        <p style="margin-top:6px;">· 我相信自己值得被好好对待 <span class="pill indigo">+3</span></p>
+      </div>
+      <div class="card">
+        <div class="h3">最不像我（-4/-3）</div>
+        <p>· 我常常因为害怕冲突而回避表达 <span class="pill red">-4</span></p>
+      </div>
+      <div class="card" style="border-left:4px solid var(--amber);">
+        <div class="h3" style="color:var(--amber);">数据透明区</div>
+        <div class="text-xs muted">条件组 · 用时 · 移动次数 · 积极描述词平均位置</div>
+        <div class="text-xs" style="margin-top:6px;color:var(--primary-dark);">「复制实验 JSON」可导出全部数据</div>
+      </div>
+    </div>
+  </div></div></div>
+  <div class="annot-col">
+    <div class="annot-card">
+      <span class="tag-line">被试反馈</span>
+      <h4>结果页 = 体验闭环</h4>
+      <p>排序完成后展示个人报告（核心发现/特质画像/最像我/最不像我），让被试获得即时反馈，提升实验完成率与体验流畅度（评分维度：审美与平面设计）。</p>
+    </div>
+    <div class="annot-card">
+      <span class="tag-line">数据透明</span>
+      <h4>可复制实验 JSON</h4>
+      <p>结果页保留「复制实验 JSON」，被试/主试可随时导出完整数据备份，符合数据伦理中的可溯源原则。</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 屏 9：主试 Dashboard ============ -->
+<div class="screen" data-title="09 主试 Dashboard">
+  <div class="phone-col">
+    <div style="width:320px;background:#fff;border-radius:24px;box-shadow:0 24px 60px rgba(15,23,42,.18);overflow:hidden;">
+      <div style="background:var(--slate-900);color:#fff;padding:18px 20px;">
+        <div style="font-size:15px;font-weight:700;">Q-Sort 主试端 · 数据看板</div>
+        <div class="text-xs" style="opacity:.7;margin-top:4px;">admin · 已登录 · <span style="color:#a5b4fc;">登出</span></div>
+      </div>
+      <div style="padding:18px 20px;">
+        <div class="table" style="margin-bottom:16px;"><table class="table">
+          <tr><th>总被试</th><th>实验组</th><th>对照组</th><th>平均用时</th></tr>
+          <tr><td style="font-size:20px;font-weight:700;">12</td><td style="font-size:20px;font-weight:700;">7</td><td style="font-size:20px;font-weight:700;">5</td><td style="font-size:20px;font-weight:700;">3分45秒</td></tr>
+        </table></div>
+        <div class="h3" style="font-size:13px;">平均完成时间（秒）</div>
+        <div style="display:flex;align-items:flex-end;gap:24px;height:90px;margin:10px 0 18px;">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+            <span class="text-xs font:bold;font-weight:700;">248</span>
+            <div style="width:44px;height:70px;border-radius:8px 8px 0 0;background:linear-gradient(180deg,#818cf8,#6366f1);"></div>
+            <span class="text-xs muted">实验组</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+            <span class="text-xs font:bold;font-weight:700;">221</span>
+            <div style="width:44px;height:62px;border-radius:8px 8px 0 0;background:linear-gradient(180deg,#94a3b8,#64748b);"></div>
+            <span class="text-xs muted">对照组</span>
+          </div>
+        </div>
+        <div class="text-xs muted" style="margin-bottom:6px;">条件筛选：</div>
+        <div style="display:flex;gap:6px;margin-bottom:12px;">
+          <span class="pill indigo" style="padding:5px 12px;">全部</span>
+          <span class="pill slate" style="padding:5px 12px;">对照组</span>
+          <span class="pill slate" style="padding:5px 12px;">实验组</span>
+        </div>
+        <div class="table"><table class="table">
+          <tr><th>编号</th><th>条件</th><th>用时</th><th>性别</th></tr>
+          <tr><td>S001</td><td><span class="pill indigo">实验</span></td><td>185s</td><td>男</td></tr>
+          <tr><td>S002</td><td><span class="pill slate">对照</span></td><td>203s</td><td>女</td></tr>
+          <tr><td>S003</td><td><span class="pill indigo">实验</span></td><td>168s</td><td>其他</td></tr>
+        </table></div>
+        <div class="text-xs muted" style="margin-top:14px;">导出 CSV：<code>GET /api/export/</code> · 原始数据：<code>GET /api/results/</code></div>
+      </div>
+    </div>
+  </div>
+  <div class="annot-col">
+    <div class="annot-card">
+      <span class="tag-line">主试层级 · 评分"开发者→主试→被试"</span>
+      <h4>主试 Dashboard（登录保护）</h4>
+      <p>主试登录 <code>/dashboard/</code> 查看：被试统计、实验组/对照组对比柱状图、条件筛选表格。回答评分标准"<strong>有'开发者→主试→被试'层级</strong>"。</p>
+    </div>
+    <div class="annot-card">
+      <span class="tag-line">数据检索</span>
+      <h4>三层数据入口</h4>
+      <p><strong>开发者</strong>：Django admin（<code>/admin/</code>）管理全部记录<br>
+      <strong>主试</strong>：Dashboard 统计 + 筛选 + CSV 导出<br>
+      <strong>被试</strong>：前端实验流程，不可见他人数据</p>
+    </div>
+    <div class="annot-card">
+      <span class="tag-line">分析就绪</span>
+      <h4>为统计分析准备</h4>
+      <p>CSV 含 <code>condition / duration_seconds / move_count / sort_data</code>，可直接导入 SPSS / R / Python 做独立样本 t 检验验证 H1–H3。</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 屏 10：数据流 ============ -->
+<div class="screen" data-title="10 数据流 · 系统架构">
+  <div class="annot-col" style="max-width:640px;margin:0 auto;">
+    <div class="annot-card" style="border-left:4px solid var(--green-dark);">
+      <span class="tag-line">系统架构</span>
+      <h4>前端 → Django → SQLite → 主试端</h4>
+      <div style="background:var(--slate-50);border-radius:12px;padding:16px;font-size:13px;line-height:2;">
+        <div style="text-align:center;font-weight:700;color:var(--primary-dark);">前端（被试端）· Next.js / React</div>
+        <div style="text-align:center;font-size:12px;color:var(--slate-500);">随机分配条件 · 引导语 · 排序交互 · 数据打包</div>
+        <div class="arrow">↓ fetch POST</div>
+        <div style="text-align:center;font-weight:700;color:var(--primary-dark);">Django API · POST /api/submit/（@csrf_exempt）</div>
+        <div class="arrow">↓</div>
+        <div style="text-align:center;font-weight:700;color:var(--primary-dark);">SQLite · QSortResult 表</div>
+        <div class="arrow">↓</div>
+        <div style="text-align:center;font-weight:700;color:var(--primary-dark);">主试端 · /dashboard/ 统计 · /api/export/ CSV</div>
+      </div>
+    </div>
+    <div class="annot-card">
+      <span class="tag-line">部署</span>
+      <h4>Netlify 部署前端 + Django 后端</h4>
+      <p>前端编译为静态站点部署 Netlify（<code>netlify.toml</code> 已配置）；后端 Django 部署于服务器/本地，CORS 已放行。</p>
+    </div>
+    <div class="annot-card">
+      <span class="tag-line">与作业要求对应</span>
+      <h4>评分对照小结</h4>
+      <div class="table" style="margin-top:8px;"><table class="table">
+        <tr><th>评分项</th><th>对应设计</th></tr>
+        <tr><td>研究设计严谨性 20</td><td>1×2 被试间 · 三组假设 · 变量操作清晰</td></tr>
+        <tr><td>功能与实验匹配 25</td><td>前后端跑通 · 开发者→主试→被试三层</td></tr>
+        <tr><td>创意与意义 20</td><td>框架效应 × Q 分类 · 对测验施测标准化有应用价值</td></tr>
+        <tr><td>审美与设计 15</td><td>渐变配色 · 拖拽交互 · 反馈闭环</td></tr>
+        <tr><td>展示与讲解 15</td><td>演示视频：被试流程 + 主试数据</td></tr>
+      </table></div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+  const screens = Array.from(document.querySelectorAll('.screen'));
+  const tabbar = document.getElementById('tabbar');
+  screens.forEach((s, i) => {
+    const btn = document.createElement('button');
+    btn.textContent = s.dataset.title;
+    btn.onclick = () => {
+      screens.forEach(x => x.classList.remove('active'));
+      tabbar.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+      s.classList.add('active'); btn.classList.add('active');
+      window.scrollTo({ top: 0 });
+    };
+    tabbar.appendChild(btn);
+    if (i === 0) { s.classList.add('active'); btn.classList.add('active'); }
+  });
+</script>
+</body>
+</html>
