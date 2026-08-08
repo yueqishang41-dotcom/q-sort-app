@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Q-Sort 主试端管理台</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <style>
+    body { background-color: #f5f7fa; }
+
+    /* 顶栏 */
+    .navbar-app { background: #fff; border-bottom: 1px solid #e6eaf0; }
+    .navbar-app .brand { font-weight: 600; color: #1f2d3d; }
+
+    /* 统计卡片 */
+    .stat-card { border: none; border-radius: 12px; box-shadow: 0 1px 3px rgba(16,42,67,.08); }
+    .stat-icon { width: 46px; height: 46px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+    .stat-label { color: #6b7a90; font-size: .82rem; }
+    .stat-value { font-size: 1.45rem; font-weight: 700; color: #1f2d3d; line-height: 1.2; }
+
+    /* 面板卡片 */
+    .card-panel { border: none; border-radius: 12px; box-shadow: 0 1px 3px rgba(16,42,67,.08); }
+
+    /* 表格 */
+    .table thead th { background: #f8fafc; color: #52627a; font-size: .78rem; font-weight: 600; text-transform: uppercase; letter-spacing: .03em; border-bottom-color: #e6eaf0; }
+    .table tbody td { vertical-align: middle; }
+    .font-mono { font-family: SFMono-Regular, Menlo, Consolas, monospace; }
+    .empty-state { padding: 3rem 1rem; color: #8a97a8; }
+
+    /* 详情弹窗内嵌表格滚动 */
+    .detail-table-wrap { max-height: 300px; overflow-y: auto; }
+  </style>
+</head>
+<body>
+
+<!-- 顶栏 -->
+<nav class="navbar navbar-app py-2">
+  <div class="container-fluid px-3 px-md-4 d-flex align-items-center">
+    <span class="navbar-brand brand d-flex align-items-center gap-2 mb-0">
+      <i class="bi bi-clipboard-data-fill text-primary"></i> Q-Sort 实验管理台
+    </span>
+    <div class="d-flex align-items-center gap-3 ms-auto">
+      <span class="text-muted small d-none d-sm-inline">
+        <i class="bi bi-person-circle me-1"></i>{{ user.get_username }}
+      </span>
+      <form method="post" action="{% url 'experiment:logout' %}" class="d-inline">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline-secondary btn-sm">
+          <i class="bi bi-box-arrow-right me-1"></i>退出
+        </button>
+      </form>
+    </div>
+  </div>
+</nav>
+
+<div class="container-fluid px-3 px-md-4 py-4">
+
+  <!-- ===== 顶部统计卡片 ===== -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="card stat-card p-3">
+        <div class="d-flex align-items-center gap-3">
+          <div class="stat-icon bg-primary-subtle text-primary"><i class="bi bi-people-fill"></i></div>
+          <div>
+            <div class="stat-label">总参与人数</div>
+            <div class="stat-value">{{ total }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card stat-card p-3">
+        <div class="d-flex align-items-center gap-3">
+          <div class="stat-icon bg-info-subtle text-info"><i class="bi bi-flask"></i></div>
+          <div>
+            <div class="stat-label">实验组人数</div>
+            <div class="stat-value">{{ exp_count }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card stat-card p-3">
+        <div class="d-flex align-items-center gap-3">
+          <div class="stat-icon bg-secondary-subtle text-secondary"><i class="bi bi-clipboard-check"></i></div>
+          <div>
+            <div class="stat-label">对照组人数</div>
+            <div class="stat-value">{{ ctrl_count }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card stat-card p-3">
+        <div class="d-flex align-items-center gap-3">
+          <div class="stat-icon bg-warning-subtle text-warning"><i class="bi bi-clock-history"></i></div>
+          <div>
+            <div class="stat-label">平均完成时间</div>
+            <div class="stat-value">{{ avg_duration_text }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 数据表格 ===== -->
+  <div class="card card-panel mb-4">
+    <div class="card-body p-3 p-md-4">
+      <div class="d-flex flex-wrap align-items-center gap-3 mb-3">
+        <h5 class="mb-0 fw-semibold"><i class="bi bi-table me-2 text-primary"></i>被试数据</h5>
+        <div class="ms-auto d-flex flex-wrap align-items-center gap-2">
+          <select id="conditionFilter" class="form-select form-select-sm" style="width:auto;" aria-label="按实验条件筛选">
+            <option value="" {% if not condition_filter %}selected{% endif %}>全部条件</option>
+            <option value="experimental" {% if condition_filter == 'experimental' %}selected{% endif %}>实验组</option>
+            <option value="control" {% if condition_filter == 'control' %}selected{% endif %}>对照组</option>
+          </select>
+          <a href="{% url 'experiment:api_export' %}" class="btn btn-primary btn-sm">
+            <i class="bi bi-download me-1"></i>导出 CSV
+          </a>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th>编号</th>
+              <th>姓名</th>
+              <th>性别</th>
+              <th>年龄</th>
+              <th>实验条件</th>
+              <th>完成时间（秒）</th>
+              <th>提交时间</th>
+              <th class="text-end">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in subjects %}
+            <tr>
+              <td class="font-mono fw-semibold">{{ s.subject_id }}</td>
+              <td>{{ s.subject_name }}</td>
+              <td>{{ s.gender }}</td>
+              <td>{{ s.age }}</td>
+              <td>
+                {% if s.condition_key == 'experimental' %}
+                  <span class="badge text-bg-primary">{{ s.condition }}</span>
+                {% else %}
+                  <span class="badge text-bg-secondary">{{ s.condition }}</span>
+                {% endif %}
+              </td>
+              <td>{{ s.duration }}</td>
+              <td>{{ s.created_at|date:"Y-m-d H:i" }}</td>
+              <td class="text-end">
+                <button type="button" class="btn btn-sm btn-outline-primary"
+                        data-bs-toggle="modal" data-bs-target="#detailModal"
+                        data-sort-id="{{ s.subject_id }}">
+                  <i class="bi bi-eye me-1"></i>查看详情
+                </button>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="8">
+                <div class="text-center empty-state">
+                  <i class="bi bi-inbox d-block mb-2" style="font-size:2rem;"></i>
+                  暂无被试数据
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="text-muted small mt-2">共 {{ subjects|length }} 条记录</div>
+    </div>
+  </div>
+
+  <!-- ===== 平均完成时间柱状图 ===== -->
+  <div class="card card-panel">
+    <div class="card-body p-3 p-md-4">
+      <h5 class="mb-1 fw-semibold"><i class="bi bi-bar-chart-fill me-2 text-primary"></i>实验组 vs 对照组平均完成时间</h5>
+      <p class="text-muted small mb-3">单位：秒</p>
+      <div class="position-relative" style="height:240px;">
+        <canvas id="durationChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===== 详情弹窗 ===== -->
+<div class="modal fade" id="detailModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content" style="border:none;border-radius:12px;">
+      <div class="modal-header border-0">
+        <h5 class="modal-title fw-semibold" id="detailTitle">—</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
+      </div>
+      <div class="modal-body">
+        <!-- 基本信息 -->
+        <div class="row g-2 small mb-3">
+          <div class="col-6 col-md-3"><span class="text-muted d-block">性别</span><span id="metaGender">—</span></div>
+          <div class="col-6 col-md-3"><span class="text-muted d-block">年龄</span><span id="metaAge">—</span></div>
+          <div class="col-6 col-md-3"><span class="text-muted d-block">实验条件</span><span id="metaCondition">—</span></div>
+          <div class="col-6 col-md-3"><span class="text-muted d-block">用时（秒）</span><span id="metaDuration">—</span></div>
+          <div class="col-6 col-md-6"><span class="text-muted d-block">提交时间</span><span id="metaCreated">—</span></div>
+          <div class="col-6 col-md-6"><span class="text-muted d-block">完成时间</span><span id="metaCompleted">—</span></div>
+          <div class="col-12"><span class="text-muted d-block">浏览器信息</span><span id="metaUA" class="text-break">—</span></div>
+        </div>
+
+        <!-- 完整排序结果 -->
+        <h6 class="fw-semibold mb-2"><i class="bi bi-layout-text-window me-1 text-primary"></i>完整 Q 分类排序结果</h6>
+        <div class="table-responsive detail-table-wrap">
+          <table class="table table-sm align-middle mb-0">
+            <thead>
+              <tr><th>卡片</th><th>档位</th></tr>
+            </thead>
+            <tbody id="sortDataBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer border-0">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 全部被试数据（含排序结果），由 json_script 输出为安全 JSON，供 JS 读取 -->
+{{ subjects_js|json_script:"subjects-data" }}
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+  // ===== 数据 =====
+  const SUBJECTS = JSON.parse(document.getElementById('subjects-data').textContent);
+
+  // ===== 条件筛选 =====
+  document.getElementById('conditionFilter').addEventListener('change', (e) => {
+    const value = e.target.value;
+    const url = new URL(window.location.href);
+    if (value) url.searchParams.set('condition', value);
+    else url.searchParams.delete('condition');
+    window.location.href = url.toString();
+  });
+
+  // ===== 详情弹窗 =====
+  document.getElementById('detailModal').addEventListener('show.bs.modal', (event) => {
+    const btn = event.relatedTarget;
+    const sid = btn.getAttribute('data-sort-id');
+    const subj = SUBJECTS.find((s) => s.subject_id === sid);
+    if (!subj) return;
+
+    document.getElementById('detailTitle').textContent = subj.subject_id + ' · ' + subj.subject_name;
+    document.getElementById('metaGender').textContent = subj.gender;
+    document.getElementById('metaAge').textContent = subj.age;
+    document.getElementById('metaCondition').textContent = subj.condition;
+    document.getElementById('metaDuration').textContent = subj.duration;
+    document.getElementById('metaCreated').textContent = subj.created_at ? new Date(subj.created_at).toLocaleString('zh-CN') : '—';
+    document.getElementById('metaCompleted').textContent = subj.completed_at ? new Date(subj.completed_at).toLocaleString('zh-CN') : '—';
+    document.getElementById('metaUA').textContent = subj.user_agent || '—';
+
+    const tbody = document.getElementById('sortDataBody');
+    tbody.innerHTML = '';
+    const entries = Object.entries(subj.sort_data || {}).sort((a, b) => b[1] - a[1]);
+
+    if (entries.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="2" class="text-center text-muted py-3">暂无排序数据</td></tr>';
+    } else {
+      entries.forEach(([cardId, score]) => {
+        const tr = document.createElement('tr');
+        const tdId = document.createElement('td');
+        tdId.className = 'font-mono small';
+        tdId.textContent = cardId;
+
+        const tdScore = document.createElement('td');
+        const badge = document.createElement('span');
+        badge.className = 'badge ' + (score > 0 ? 'text-bg-primary' : score < 0 ? 'text-bg-danger' : 'text-bg-secondary');
+        badge.textContent = score > 0 ? '+' + score : String(score);
+        tdScore.appendChild(badge);
+
+        tr.appendChild(tdId);
+        tr.appendChild(tdScore);
+        tbody.appendChild(tr);
+      });
+    }
+  });
+
+  // ===== 柱状图 =====
+  const ctx = document.getElementById('durationChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['实验组', '对照组'],
+      datasets: [{
+        label: '平均完成时间（秒）',
+        data: [{{ exp_avg }}, {{ ctrl_avg }}],
+        backgroundColor: ['#0d6efd', '#adb5bd'],
+        borderRadius: 8,
+        maxBarThickness: 64,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: (c) => ' ' + c.parsed.y + ' 秒' } }
+      },
+      scales: {
+        y: { beginAtZero: true, grid: { color: '#eef1f5' }, ticks: { callback: (v) => v + ' 秒' } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+</script>
+</body>
+</html>

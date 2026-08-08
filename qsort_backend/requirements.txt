@@ -1,0 +1,5 @@
+# Q-Sort experiment backend dependencies
+# Requires Python 3.10+ (required by Django 5.x)
+
+Django>=5.2,<5.3
+django-cors-headers>=4.7,<5.0
